@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
     const conversationId = formData.get("conversationId") as string | null;
     const editInstructions = formData.get("editInstructions") as string | null;
     const userId = formData.get("userId") ? Number(formData.get("userId")) : null;
+    const comment = formData.get("comment") as string | null; // コメント欄を追加
 
     console.log('Form data parsed:', {
       kpiTarget,
@@ -186,6 +187,7 @@ export async function POST(req: NextRequest) {
         product_category: productCategory,
         current_metrics_img: uploadedFileIds.find(file => file.type === "image") || null,
         input_creative: uploadedFileIds.find(file => file.type === "video") || null,
+        ...(comment ? { comment } : {}), // コメントがあれば追加
       },
       query: editInstructions ? `内容: ${editInstructions}` : "レポート作成開始",
       user: "tobuy-report-user",
@@ -286,11 +288,9 @@ export async function POST(req: NextRequest) {
     return new Response(stream, {
       headers: { "Content-Type": "text/event-stream; charset=utf-8" },
     });
-
   } catch (error) {
     console.error('API endpoint error:', error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    console.error('Returning error response:', errorMessage);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 } 

@@ -48,6 +48,7 @@ interface FormData {
   productCategory: string
   currentMetricsImg: File | null
   inputCreative: File | null
+  comment: string // 任意コメント欄を追加
 }
 
 // reportHistoryの型をDBのカラムに合わせる
@@ -74,6 +75,7 @@ export default function TobuyReportTool() {
     productCategory: "",
     currentMetricsImg: null,
     inputCreative: null,
+    comment: "", // 初期値
   })
   const [generatedReport, setGeneratedReport] = useState("")
   const [editInstructions, setEditInstructions] = useState("")
@@ -143,6 +145,16 @@ export default function TobuyReportTool() {
   // 初回マウント時にも取得
   useEffect(() => { fetchCategories(); }, []);
 
+  // 初回マウント時にlocalStorageからユーザー情報を復元
+  useEffect(() => {
+    const savedUser = localStorage.getItem('tobuy_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+      setIsLoggedIn(true);
+      setCurrentState('report');
+    }
+  }, []);
+
   useEffect(() => {
     if (settingsTab === 'account' && user) {
       setEditAccount({ name: user.name, email: user.email, password: '' });
@@ -159,6 +171,7 @@ export default function TobuyReportTool() {
     if (!formData.productCategory) newErrors.productCategory = "商品カテゴリは必須項目です"
     if (!formData.currentMetricsImg) newErrors.currentMetricsImg = "現在のメトリクス画像は必須項目です"
     if (!formData.inputCreative) newErrors.inputCreative = "入力クリエイティブは必須項目です"
+    if (!formData.comment) newErrors.comment = "コメントは必須項目です" // コメントも必須に
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -192,6 +205,7 @@ export default function TobuyReportTool() {
     if (formData.currentMetricsImg) body.append("currentMetricsImg", formData.currentMetricsImg)
     if (formData.inputCreative) body.append("inputCreative", formData.inputCreative)
     if (user && user.id) body.append("userId", String(user.id))
+    if (formData.comment) body.append("comment", formData.comment) // コメントも送信
     
     try {
       const response = await fetch("/api/chat", {
@@ -279,6 +293,7 @@ export default function TobuyReportTool() {
     body.append("conversationId", conversationId)
     body.append("editInstructions", editInstructions)
     if (user && user.id) body.append("userId", String(user.id))
+    if (formData.comment) body.append("comment", formData.comment) // コメントも送信
 
     try {
       const response = await fetch("/api/chat", {
@@ -356,6 +371,7 @@ export default function TobuyReportTool() {
       productCategory: "",
       currentMetricsImg: null,
       inputCreative: null,
+      comment: "",
     })
     setGeneratedReport("")
     setEditInstructions("")
@@ -697,6 +713,7 @@ export default function TobuyReportTool() {
                       setCurrentState('report');
                       setIsLoggedIn(true);
                       setUser(data.user);
+                      localStorage.setItem('tobuy_user', JSON.stringify(data.user));
                     } catch (err: any) {
                       setAuthError(err.message);
                     }
@@ -736,6 +753,7 @@ export default function TobuyReportTool() {
                       setCurrentState('report');
                       setIsLoggedIn(true);
                       setUser(data.user);
+                      localStorage.setItem('tobuy_user', JSON.stringify(data.user));
                     } catch (err: any) {
                       setAuthError(err.message);
                     }
@@ -827,7 +845,7 @@ export default function TobuyReportTool() {
                 asChild
                 className="block w-full text-center px-4 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
                 variant="ghost"
-                onClick={() => { setIsLoggedIn(false); setUser(null); setCurrentState('home'); }}
+                onClick={() => { setIsLoggedIn(false); setUser(null); localStorage.removeItem('tobuy_user'); setCurrentState('home'); }}
               >
                 <span>ログアウト</span>
               </Button>
@@ -1048,6 +1066,19 @@ export default function TobuyReportTool() {
                       />
                   <p className="text-xs text-slate-500 mt-1">対象動画をアップロード</p>
                   {errors.inputCreative && <p className="text-red-500 text-sm mt-1">{errors.inputCreative}</p>}
+                    </div>
+                {/* コメント欄必須化・エラー表示 */}
+                    <div>
+                  <Label htmlFor="comment">コメント（必須）</Label>
+                  <Textarea
+                    id="comment"
+                    value={formData.comment}
+                    onChange={e => handleInputChange('comment', e.target.value)}
+                        className="mt-1 w-full" 
+                    placeholder="分析してほしい内容や補足コメントを入力してください"
+                    required
+                  />
+                  {errors.comment && <p className="text-red-500 text-sm mt-1">{errors.comment}</p>}
                 </div>
                 <div className="pt-6">
                   <Button 

@@ -28,3 +28,6 @@ next-env.d.tsnode_modules/
 .next/
 out/
 *.log
+
+# Local Netlify folder
+.netlify
